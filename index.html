@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Розовая игра на умножение</title>
+  <style>
+    :root{
+      --bg1:#ffe6f2; /* pale pink */
+      --bg2:#ffd1e6; /* light pink */
+      --accent:#ff6fb5; /* bright pink */
+      --accent-2:#ff99cc;
+      --card:#fff3f8;
+      --muted:#7a3b4f;
+      --success:#5ee6a1;
+      --danger:#ff8a8a;
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      display:flex;align-items:center;justify-content:center;
+      padding:24px;
+    }
+
+    .game-wrap{
+      width:100%;max-width:920px;background:linear-gradient(180deg,rgba(255,255,255,0.8),rgba(255,255,255,0.6));
+      border-radius:20px;padding:28px;box-shadow:0 12px 40px rgba(170,40,120,0.12);
+      transform:translateY(0);
+      animation:float 6s ease-in-out infinite;
+      border:1px solid rgba(255,255,255,0.6);
+    }
+    @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{margin:0;font-size:20px;color:#5a2540}
+
+    .levels{display:flex;gap:8px;flex-wrap:wrap}
+    .level-btn{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:white;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 6px 12px rgba(255,111,181,0.18);transition:transform .18s ease,box-shadow .18s ease}
+    .level-btn[aria-pressed="true"]{outline:3px solid rgba(255,111,181,0.12);transform:translateY(-3px);box-shadow:0 10px 20px rgba(255,111,181,0.22)}
+
+    main{display:flex;gap:20px;align-items:stretch}
+    .card{flex:1;background:var(--card);border-radius:16px;padding:18px;box-shadow:0 8px 20px rgba(120,30,80,0.06);border:1px solid rgba(255,255,255,0.7)}
+
+    .question{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px;border-radius:12px;background:linear-gradient(0deg,rgba(255,255,255,0.8),rgba(255,255,255,0.6));}
+    .oper{font-size:48px;color:var(--muted);font-weight:700;display:flex;gap:10px;align-items:center}
+    .dot{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#fff,#ffd6ed);box-shadow:0 6px 18px rgba(255,111,181,0.15);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--muted);font-weight:700}
+
+    .answers{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:18px}
+    .answer-input{padding:12px 14px;border-radius:12px;border:2px solid rgba(255,111,181,0.12);font-size:20px;max-width:160px;width:100%;text-align:center}
+    .submit-btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;border:none;padding:12px 16px;border-radius:12px;cursor:pointer;font-size:16px;box-shadow:0 8px 18px rgba(255,111,181,0.12)}
+    .submit-btn:active{transform:translateY(1px)}
+    .ans-btn{background:linear-gradient(180deg,#fff,#fff);border:2px solid rgba(255,111,181,0.12);padding:12px;border-radius:12px;font-size:20px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .18s;box-shadow:0 6px 14px rgba(230,150,210,0.06)}
+    .ans-btn:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(255,111,181,0.12)}
+
+    .controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+    .btn{padding:8px 12px;border-radius:10px;border:none;background:rgba(90,37,64,0.06);cursor:pointer;color:var(--muted)}
+    .refresh{background:linear-gradient(90deg,#fff,#ffe6f2);border:1px solid rgba(255,111,181,0.14)}
+
+    .feedback{height:40px;margin-top:12px;display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--muted)}
+
+    /* success animation */
+    .correct{animation:pop 600ms ease forwards}
+    @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+    /* wrong shake */
+    .wrong{animation:shake 800ms cubic-bezier(.36,.07,.19,.97) both}
+    @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+
+    /* score & info */
+    .info{display:flex;flex-direction:column;gap:12px}
+    .stat{background:linear-gradient(180deg,#fff3fb,#fff1f7);padding:12px;border-radius:12px;text-align:center}
+    .big{font-size:28px;font-weight:800;color:var(--accent)}
+    .small{font-size:14px;color:#6b3b4c}
+
+    footer{margin-top:14px;text-align:center;color:#7a3b4f}
+
+    /* responsive */
+    @media (max-width:720px){main{flex-direction:column}.answers{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="game-wrap" role="application" aria-label="Розовая игра умножение">
+    <header>
+      <h1>Розовая игра на умножение — уровни 1–10</h1>
+      <div class="levels" role="tablist" aria-label="Выбор уровня">
+        <!-- level buttons inserted by JS -->
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="question" id="questionCard">
+          <div class="oper" id="operDisplay">
+            <div id="leftOper" class="dot">1</div>
+            <div style="font-size:28px;color:#b04a82">×</div>
+            <div id="rightOper" class="dot">1</div>
+            <div style="font-size:28px;color:#b04a82">=</div>
+            <div id="blank" style="min-width:90px;text-align:center;font-size:32px;color:var(--muted);">?</div>
+          </div>
+
+          <div class="answers" id="answers">
+            <input inputmode="numeric" pattern="[0-9]*" class="answer-input" id="answerInput" placeholder="Ваш ответ" aria-label="Ваш ответ">
+            <button class="submit-btn" id="submitBtn">Проверить</button>
+          </div>
+
+          <div class="controls">
+            <button class="btn refresh" id="refreshBtn" title="Новый пример">🔄 Обновить пример</button>
+            <div style="flex:1"></div>
+            <div class="small">Уровень: <strong id="levelLabel">1</strong></div>
+          </div>
+
+          <div class="feedback" id="feedbackArea">Выберите ответ</div>
+        </div>
+      </section>
+
+      <aside class="card info" aria-hidden="false">
+        <div class="stat">
+          <div class="big" id="score">0</div>
+          <div class="small">Правильных ответов</div>
+        </div>
+
+        <div class="stat">
+          <div class="big" id="attempts">0</div>
+          <div class="small">Попыток</div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="level-btn" id="prev">◀</button>
+          <button class="level-btn" id="next">▶</button>
+        </div>
+
+        <footer>Красивые анимации, розовая тема и простая механика.</footer>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    // Game state
+    const state = { level: 1, left:1, right:1, correct:0, attempts:0 };
+
+    const levelsContainer = document.querySelector('.levels');
+    const levelLabel = document.getElementById('levelLabel');
+    const leftOper = document.getElementById('leftOper');
+    const rightOper = document.getElementById('rightOper');
+    const blank = document.getElementById('blank');
+    const answersDiv = document.getElementById('answers');
+    const feedback = document.getElementById('feedbackArea');
+    const scoreEl = document.getElementById('score');
+    const attemptsEl = document.getElementById('attempts');
+
+    // create level buttons 1..10
+    for(let i=1;i<=10;i++){
+      const b = document.createElement('button');
+      b.className='level-btn'; b.textContent = i; b.setAttribute('role','tab');
+      b.dataset.level = i;
+      if(i===1) b.setAttribute('aria-pressed','true'); else b.setAttribute('aria-pressed','false');
+      b.addEventListener('click',()=>{setLevel(i)});
+      levelsContainer.appendChild(b);
+    }
+
+    function setLevel(n){
+      state.level = n; levelLabel.textContent = n;
+      document.querySelectorAll('.level-btn').forEach(btn=>btn.setAttribute('aria-pressed', btn.dataset.level==n ? 'true' : 'false'));
+      newProblem();
+      pulseLevel();
+    }
+
+    function pulseLevel(){
+      // small visual flip
+      const active = [...document.querySelectorAll('.level-btn')].find(b=>b.dataset.level==state.level);
+      active.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:420,easing:'ease'});
+    }
+
+    function newProblem(){
+      state.left = state.level;
+      state.right = Math.floor(Math.random()*10)+1;
+      leftOper.textContent = state.left;
+      rightOper.textContent = state.right;
+      blank.textContent = '?';
+      feedback.textContent = 'Введите ответ и нажмите "Проверить"';
+      answersDiv.innerHTML='';
+
+      // create input and submit (safe to recreate each problem)
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'answer-input';
+      input.id = 'answerInput';
+      input.placeholder = 'Ваш ответ';
+      input.style.width = '120px';
+
+      const submit = document.createElement('button');
+      submit.className = 'submit-btn';
+      submit.id = 'submitBtn';
+      submit.textContent = 'Проверить';
+
+      answersDiv.appendChild(input);
+      answersDiv.appendChild(submit);
+
+      const correct = state.left * state.right;
+
+      const submitHandler = ()=>{
+        const raw = input.value;
+        if(raw === null || raw === undefined || raw === ''){ feedback.textContent = 'Введите число'; input.classList.add('wrong'); setTimeout(()=>input.classList.remove('wrong'),800); return; }
+        const val = Number(raw);
+        state.attempts++;
+        attemptsEl.textContent = state.attempts;
+        if (val === correct){
+          state.correct++;
+          scoreEl.textContent = state.correct;
+          blank.textContent = correct;
+          feedback.textContent = 'Правильно! ✨';
+          animateCorrect(input);
+          confettiPulse();
+          submit.disabled = true; input.disabled = true;
+          setTimeout(()=>newProblem(),700);
+        } else {
+          feedback.textContent = 'Неправильно. Попробуйте ещё!';
+          input.classList.add('wrong');
+          setTimeout(()=>input.classList.remove('wrong'),900);
+        }
+      };
+
+      submit.addEventListener('click',submitHandler);
+      input.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ submitHandler(); } });
+      setTimeout(()=>input.focus(),50);
+    }
+
+
+
+    function animateCorrect(el){
+      el.animate([{transform:'scale(1)'},{transform:'scale(1.08)'},{transform:'scale(1)'}],{duration:420});
+    }
+
+    function confettiPulse(){
+      const q = document.getElementById('questionCard');
+      q.animate([{boxShadow:'0 8px 25px rgba(255,111,181,0.09)'},{boxShadow:'0 20px 60px rgba(255,111,181,0.16)'},{boxShadow:'0 8px 25px rgba(255,111,181,0.09)'}],{duration:700});
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click',()=>{
+      // generate a new right operand (same level)
+      newProblem();
+    });
+
+    document.getElementById('prev').addEventListener('click',()=>{ setLevel(Math.max(1,state.level-1)) });
+    document.getElementById('next').addEventListener('click',()=>{ setLevel(Math.min(10,state.level+1)) });
+
+    // initialize
+    newProblem();
+
+    // keyboard support: Enter to submit when focused, n for new, digits 0-9 switch level
+    window.addEventListener('keydown',(e)=>{
+      if(e.key==='n' || e.key==='N'){
+        newProblem();
+      } else if(e.key>='0' && e.key<='9'){
+        let lvl = (e.key==='0')?10:parseInt(e.key,10);
+        if(lvl>=1 && lvl<=10) setLevel(lvl);
+      }
+    });
+  </script>
+</body>
+</html>
